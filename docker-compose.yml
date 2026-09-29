@@ -1,0 +1,41 @@
+# Run everything with:  docker compose up --build
+# App: http://localhost:8080   (override the port with WEB_PORT in a .env file)
+
+services:
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # !! The fallback below exists only so `docker compose up` works with zero setup. It is public knowledge,
+      # !! so anyone could forge tokens against a deployment that uses it. Set JWT_SIGNING_KEY (see .env.example)
+      # !! to a long random value for anything beyond local use.
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-local-dev-only-insecure-signing-key-change-me-0123456789}
+    volumes:
+      - todo-data:/data
+    healthcheck:
+      # The aspnet runtime image has bash but no curl/wget, so probe /health over a raw TCP socket.
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080 &&
+          printf 'GET /health HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          head -n 1 <&3 | grep -q ' 200 '
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  todo-data:

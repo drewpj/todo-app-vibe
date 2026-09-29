@@ -1,0 +1,22 @@
+# .NET
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+TestResults/
+.vs/
+
+# Node
+node_modules/
+dist/
+coverage/
+
+# Local config / secrets
+.env
+*.user
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
